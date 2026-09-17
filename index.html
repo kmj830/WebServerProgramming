@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>웹 서버 프로그래밍 실습 포털 | Web Server Programming</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-hover-bg: rgba(51, 65, 85, 0.8);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent-color: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.25);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-color);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.12) 0px, transparent 50%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* 헤더 */
+    header {
+      text-align: center;
+      margin-bottom: 50px;
+      padding-top: 20px;
+    }
+
+    .badge-top {
+      display: inline-block;
+      padding: 6px 14px;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 9999px;
+      color: var(--accent-color);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* 프로젝트 그리드 */
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 24px;
+    }
+
+    .project-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .project-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .project-card.pomodoro::before {
+      background: linear-gradient(90deg, #f87171, #fb923c);
+    }
+
+    .project-card:hover {
+      transform: translateY(-6px);
+      background: var(--card-hover-bg);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+    }
+
+    .project-card:hover::before {
+      opacity: 1;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .icon-box {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card-tag {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-secondary);
+    }
+
+    h2.card-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #ffffff;
+    }
+
+    p.card-desc {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 24px;
+      flex: 1;
+    }
+
+    .tech-stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    .tech-badge {
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      color: var(--accent-color);
+      font-weight: 700;
+      font-size: 0.95rem;
+      gap: 6px;
+      transition: gap 0.2s ease;
+    }
+
+    .project-card:hover .card-footer {
+      gap: 10px;
+    }
+
+    /* 푸터 */
+    footer {
+      text-align: center;
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    footer a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    footer a:hover {
+      color: var(--accent-color);
+    }
+
+    @media (max-width: 640px) {
+      h1 {
+        font-size: 1.9rem;
+      }
+      .project-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge-top">2026 Web Server Programming</div>
+      <h1>웹 서버 프로그래밍 실습 포털</h1>
+      <p class="subtitle">GitHub Pages를 통해 각 실습 프로젝트 페이지로 쉽게 이동할 수 있습니다.</p>
+    </header>
+
+    <main class="project-grid">
+      <!-- 뽀모도로 타이머 -->
+      <a href="./pomodoro-timer/" class="project-card pomodoro">
+        <div class="card-header">
+          <div class="icon-box">🍅</div>
+          <span class="card-tag">Project</span>
+        </div>
+        <h2 class="card-title">뽀모도로 타이머</h2>
+        <p class="card-desc">
+          집중(25분)과 휴식(5분/15분) 주기를 관리하는 타이머입니다. 모드별 테마 색상 전환, 원형 SVG 프로그레스 게이지, Web Audio API 차임벨 사운드를 제공합니다.
+        </p>
+        <div class="tech-stack">
+          <span class="tech-badge">Vanilla JS</span>
+          <span class="tech-badge">SVG Animation</span>
+          <span class="tech-badge">Web Audio API</span>
+        </div>
+        <div class="card-footer">
+          <span>실행하기</span>
+          <span>→</span>
+        </div>
+      </a>
+
+      <!-- 간단한 카운터 -->
+      <a href="./counter/" class="project-card">
+        <div class="card-header">
+          <div class="icon-box">🔢</div>
+          <span class="card-tag">Week 02</span>
+        </div>
+        <h2 class="card-title">간단한 카운터</h2>
+        <p class="card-desc">
+          2주차 자바스크립트 기초 실습 예제입니다. 이벤트 리스너(Click)와 DOM 렌더링을 활용한 숫자 증감 및 초기화 카운터입니다.
+        </p>
+        <div class="tech-stack">
+          <span class="tech-badge">JavaScript</span>
+          <span class="tech-badge">DOM Event</span>
+          <span class="tech-badge">CSS</span>
+        </div>
+        <div class="card-footer">
+          <span>실행하기</span>
+          <span>→</span>
+        </div>
+      </a>
+    </main>
+
+    <footer>
+      <a href="https://nano5.notion.site/JavaScript-f94daf211d428311a5a801dd193d10ca?source=copy_link" target="_blank" rel="noopener noreferrer">Notion 강의 노트 ↗</a>
+      <span>•</span>
+      <a href="https://github.com/kmj830/WebServerProgramming" target="_blank" rel="noopener noreferrer">GitHub Repository ↗</a>
+    </footer>
+  </div>
+</body>
+</html>
