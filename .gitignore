@@ -1,0 +1,24 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE and Editor files
+.idea/
+*.iml
+.vscode/
+
+# AI Coding Assistants & Skills
+.agents/
+skills-lock.json
+.gemini/
+.claude/
+.cursor/
+.windsurf/
+
+# Design & Documentation
+디자인.md
+*디자인*.md
+design.md
+DESIGN.md
+*design*.md
+SKILL.md
