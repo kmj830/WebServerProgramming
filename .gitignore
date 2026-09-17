@@ -7,13 +7,26 @@ Thumbs.db
 *.iml
 .vscode/
 
-# AI Coding Assistants & Skills
+# AI Coding Assistants, Skills & Configs
 .agents/
 skills-lock.json
 .gemini/
 .claude/
 .cursor/
 .windsurf/
+.cline/
+.roo/
+.cursorrules
+copilot-instructions.md
+AGENTS.md
+*AGENTS*.md
+*AGENT*.md
+GEMINI.md
+*GEMINI*.md
+CLAUDE.md
+*CLAUDE*.md
+*.prompt
+*.skill
 
 # Design & Documentation
 디자인.md

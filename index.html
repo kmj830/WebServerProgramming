@@ -3,20 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>웹 서버 프로그래밍 실습 포털 | Web Server Programming</title>
+  <title>웹 서버 프로그래밍 2026 | 실습 포털</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
   <style>
+    /* DESIGN.md - Airbnb Design System Tokens */
     :root {
-      --bg-color: #0f172a;
-      --card-bg: rgba(30, 41, 59, 0.7);
-      --card-hover-bg: rgba(51, 65, 85, 0.8);
-      --card-border: rgba(255, 255, 255, 0.1);
-      --text-primary: #f8fafc;
-      --text-secondary: #94a3b8;
-      --accent-color: #38bdf8;
-      --accent-glow: rgba(56, 189, 248, 0.25);
+      --color-primary: #ff385c;
+      --color-primary-active: #e00b41;
+      --color-primary-disabled: #ffd1da;
+      --color-ink: #222222;
+      --color-body: #3f3f3f;
+      --color-muted: #6a6a6a;
+      --color-muted-soft: #929292;
+      --color-canvas: #ffffff;
+      --color-surface-soft: #f7f7f7;
+      --color-surface-strong: #f2f2f2;
+      --color-hairline: #dddddd;
+      --color-hairline-soft: #ebebeb;
+      --color-border-strong: #c1c1c1;
+
+      --font-family-base: 'Airbnb Cereal VF', 'Pretendard', Circular, -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      --font-family-mono: 'Roboto Mono', monospace;
+
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+
+      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.05);
+      --shadow-card-hover: 0 10px 28px rgba(0, 0, 0, 0.09);
+      --shadow-pill: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     * {
@@ -26,274 +44,441 @@
     }
 
     body {
-      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: var(--bg-color);
-      background-image: 
-        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.12) 0px, transparent 50%);
-      color: var(--text-primary);
+      font-family: var(--font-family-base);
+      background-color: var(--color-canvas);
+      color: var(--color-ink);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding: 40px 20px;
     }
 
-    .container {
-      max-width: 960px;
+    /* 내비게이션 바 */
+    .top-nav {
+      border-bottom: 1px solid var(--color-hairline-soft);
+      position: sticky;
+      top: 0;
+      background-color: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+
+    .nav-inner {
+      max-width: 1120px;
       margin: 0 auto;
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: var(--color-primary);
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      fill: var(--color-primary);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-pill-btn {
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--color-body);
+      text-decoration: none;
+      padding: 9px 16px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-hairline);
+      background: var(--color-canvas);
+      transition: all 0.2s ease;
+    }
+
+    .nav-pill-btn:hover {
+      border-color: var(--color-ink);
+      color: var(--color-ink);
+      box-shadow: var(--shadow-pill);
+    }
+
+    /* 메인 콘텐츠 영역 */
+    .main-container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
       width: 100%;
       flex: 1;
     }
 
-    /* 헤더 */
-    header {
-      text-align: center;
-      margin-bottom: 50px;
-      padding-top: 20px;
+    /* 히어로 섹션 */
+    .hero-section {
+      margin-bottom: 40px;
     }
 
-    .badge-top {
+    .category-chip {
       display: inline-block;
-      padding: 6px 14px;
-      background: rgba(56, 189, 248, 0.15);
-      border: 1px solid rgba(56, 189, 248, 0.3);
-      border-radius: 9999px;
-      color: var(--accent-color);
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       font-weight: 600;
-      margin-bottom: 16px;
+      color: var(--color-primary);
+      background: rgba(255, 56, 92, 0.08);
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      margin-bottom: 14px;
+      letter-spacing: 0.2px;
     }
 
-    h1 {
-      font-size: 2.5rem;
-      font-weight: 800;
-      letter-spacing: -0.8px;
-      margin-bottom: 12px;
-      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+    .hero-title {
+      font-size: 1.85rem;
+      font-weight: 600;
+      color: var(--color-ink);
+      letter-spacing: -0.5px;
+      line-height: 1.25;
+      margin-bottom: 8px;
     }
 
-    p.subtitle {
-      font-size: 1.1rem;
-      color: var(--text-secondary);
-      line-height: 1.6;
+    .hero-subtitle {
+      font-size: 1rem;
+      color: var(--color-muted);
+      font-weight: 400;
+      line-height: 1.5;
     }
 
-    /* 프로젝트 그리드 */
-    .project-grid {
+    /* 카드 그리드 */
+    .cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 28px;
     }
 
+    /* 프로젝트 카드 (Airbnb Property/Experience Card Spec) */
     .project-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 28px;
-      display: flex;
-      flex-direction: column;
+      background-color: var(--color-canvas);
+      border: 1px solid var(--color-hairline-soft);
+      border-radius: var(--radius-md);
+      overflow: hidden;
       text-decoration: none;
       color: inherit;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-card);
+      transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+
+    .project-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-card-hover);
+      border-color: var(--color-hairline);
+    }
+
+    /* 카드 썸네일 영역 */
+    .card-preview-area {
+      height: 180px;
+      background: var(--color-surface-soft);
+      border-bottom: 1px solid var(--color-hairline-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       position: relative;
       overflow: hidden;
     }
 
-    .project-card::before {
-      content: '';
+    .preview-badge {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #38bdf8, #818cf8);
-      opacity: 0;
-      transition: opacity 0.3s ease;
+      top: 14px;
+      left: 14px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(4px);
+      border: 1px solid var(--color-hairline-soft);
+      border-radius: var(--radius-full);
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-ink);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     }
 
-    .project-card.pomodoro::before {
-      background: linear-gradient(90deg, #f87171, #fb923c);
-    }
-
-    .project-card:hover {
-      transform: translateY(-6px);
-      background: var(--card-hover-bg);
-      border-color: rgba(255, 255, 255, 0.2);
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
-    }
-
-    .project-card:hover::before {
-      opacity: 1;
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .icon-box {
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
+    .preview-icon-wrapper {
+      width: 72px;
+      height: 72px;
+      border-radius: var(--radius-full);
+      background: var(--color-canvas);
+      border: 1px solid var(--color-hairline);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.8rem;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 2.2rem;
+      box-shadow: var(--shadow-card);
+      transition: transform 0.3s ease;
     }
 
-    .card-tag {
-      font-size: 0.78rem;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-secondary);
+    .project-card:hover .preview-icon-wrapper {
+      transform: scale(1.08);
     }
 
-    h2.card-title {
-      font-size: 1.35rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-      color: #ffffff;
-    }
-
-    p.card-desc {
-      font-size: 0.95rem;
-      color: var(--text-secondary);
-      line-height: 1.5;
-      margin-bottom: 24px;
+    /* 카드 본문 */
+    .card-body {
+      padding: 22px 20px 20px;
+      display: flex;
+      flex-direction: column;
       flex: 1;
     }
 
-    .tech-stack {
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--color-ink);
+      letter-spacing: -0.2px;
+    }
+
+    .card-rating {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-ink);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .star-icon {
+      color: var(--color-primary);
+      font-size: 0.85rem;
+    }
+
+    .card-desc {
+      font-size: 0.9rem;
+      color: var(--color-muted);
+      line-height: 1.45;
+      margin-bottom: 20px;
+      flex: 1;
+    }
+
+    /* 태그 목록 */
+    .card-tags {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
       margin-bottom: 20px;
     }
 
-    .tech-badge {
+    .tag-pill {
       font-size: 0.75rem;
       font-weight: 500;
-      padding: 3px 8px;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.05);
-      color: #cbd5e1;
+      color: var(--color-body);
+      background-color: var(--color-surface-soft);
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-hairline-soft);
     }
 
-    .card-footer {
+    /* 카드 액션 버튼 */
+    .card-action {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
-      color: var(--accent-color);
-      font-weight: 700;
-      font-size: 0.95rem;
-      gap: 6px;
-      transition: gap 0.2s ease;
+      justify-content: space-between;
+      padding-top: 14px;
+      border-top: 1px solid var(--color-hairline-soft);
     }
 
-    .project-card:hover .card-footer {
-      gap: 10px;
+    .action-note {
+      font-size: 0.82rem;
+      color: var(--color-muted-soft);
+    }
+
+    .btn-launch {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #ffffff;
+      background-color: var(--color-primary);
+      padding: 8px 18px;
+      border-radius: var(--radius-full);
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .project-card:hover .btn-launch {
+      background-color: var(--color-primary-active);
+    }
+
+    .btn-launch:active {
+      transform: scale(0.96);
     }
 
     /* 푸터 */
     footer {
-      text-align: center;
-      margin-top: 60px;
-      padding-top: 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-      display: flex;
-      justify-content: center;
-      gap: 20px;
+      border-top: 1px solid var(--color-hairline-soft);
+      background: var(--color-surface-soft);
+      padding: 32px 24px;
     }
 
-    footer a {
-      color: var(--text-secondary);
+    .footer-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--color-muted);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 16px;
+    }
+
+    .footer-links a {
+      color: var(--color-muted);
       text-decoration: none;
       transition: color 0.2s ease;
     }
 
-    footer a:hover {
-      color: var(--accent-color);
+    .footer-links a:hover {
+      color: var(--color-ink);
+      text-decoration: underline;
     }
 
     @media (max-width: 640px) {
-      h1 {
-        font-size: 1.9rem;
+      .footer-inner {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
       }
-      .project-grid {
+      .nav-inner {
+        padding: 14px 16px;
+      }
+      .main-container {
+        padding: 28px 16px 60px;
+      }
+      .hero-title {
+        font-size: 1.5rem;
+      }
+      .cards-grid {
         grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="badge-top">2026 Web Server Programming</div>
-      <h1>웹 서버 프로그래밍 실습 포털</h1>
-      <p class="subtitle">GitHub Pages를 통해 각 실습 프로젝트 페이지로 쉽게 이동할 수 있습니다.</p>
+  <!-- 상단 내비게이션 -->
+  <nav class="top-nav">
+    <div class="nav-inner">
+      <a href="./" class="brand-logo">
+        <svg class="brand-icon" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M16 1c2.008 0 3.463.963 4.751 3.269l.533 1.025c1.954 3.83 6.116 12.515 7.1 14.836 1.457 3.447 1.35 6.776-.328 9.387-1.748 2.718-4.706 4.483-8.056 4.483-3.036 0-5.834-1.428-7.551-3.791-1.717 2.363-4.515 3.791-7.551 3.791-3.35 0-6.308-1.765-8.056-4.483-1.678-2.611-1.785-5.94-.328-9.387.984-2.321 5.146-11.006 7.1-14.836l.533-1.025C9.537 1.963 10.992 1 13 1h3zm0 2h-3c-1.392 0-2.392.678-3.414 2.502l-.533 1.025C7.147 10.276 3.063 18.8 2.148 20.97c-1.229 2.906-1.12 5.539.222 7.625 1.385 2.153 3.766 3.405 6.53 3.405 2.894 0 5.46-1.542 6.643-4.004l.457-.954.457.954c1.183 2.462 3.749 4.004 6.643 4.004 2.764 0 5.145-1.252 6.53-3.405 1.342-2.086 1.451-4.719.222-7.625-.915-2.17-4.999-10.694-6.905-14.443l-.533-1.025C21.392 3.678 20.392 3 19 3h-3zm0 13c3.314 0 6 2.686 6 6 0 2.585-1.636 4.8-4 5.623V25a2 2 0 0 0-4 0v2.623c-2.364-.823-4-3.038-4-5.623 0-3.314 2.686-6 6-6zm0 2c-2.209 0-4 1.791-4 4 0 1.637 1.01 3.045 2.454 3.655.334-.411.546-.937.546-1.655 0-1.657 1.343-3 3-3s3 1.343 3 3c0 .718.212 1.244.546 1.655C22.99 25.045 24 23.637 24 22c0-2.209-1.791-4-4-4z"/>
+        </svg>
+        <span>WebServerLab</span>
+      </a>
+
+      <div class="nav-links">
+        <a href="https://nano5.notion.site/JavaScript-f94daf211d428311a5a801dd193d10ca?source=copy_link" target="_blank" rel="noopener noreferrer" class="nav-pill-btn">강의 노트 ↗</a>
+        <a href="https://github.com/kmj830/WebServerProgramming" target="_blank" rel="noopener noreferrer" class="nav-pill-btn">GitHub ↗</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 본문 컨테이너 -->
+  <main class="main-container">
+    <header class="hero-section">
+      <span class="category-chip">2026 Web Server Programming</span>
+      <h1 class="hero-title">실습 프로젝트 & 포트폴리오</h1>
+      <p class="hero-subtitle">웹 서버 프로그래밍 강의 실습 및 과제를 바로 실행하고 체험할 수 있습니다.</p>
     </header>
 
-    <main class="project-grid">
-      <!-- 뽀모도로 타이머 -->
-      <a href="./pomodoro-timer/" class="project-card pomodoro">
-        <div class="card-header">
-          <div class="icon-box">🍅</div>
-          <span class="card-tag">Project</span>
+    <!-- 프로젝트 카드 그리드 -->
+    <section class="cards-grid" aria-label="프로젝트 목록">
+      <!-- 1. 뽀모도로 타이머 카드 -->
+      <a href="./pomodoro-timer/" class="project-card">
+        <div class="card-preview-area">
+          <span class="preview-badge">Project</span>
+          <div class="preview-icon-wrapper">🍅</div>
         </div>
-        <h2 class="card-title">뽀모도로 타이머</h2>
-        <p class="card-desc">
-          집중(25분)과 휴식(5분/15분) 주기를 관리하는 타이머입니다. 모드별 테마 색상 전환, 원형 SVG 프로그레스 게이지, Web Audio API 차임벨 사운드를 제공합니다.
-        </p>
-        <div class="tech-stack">
-          <span class="tech-badge">Vanilla JS</span>
-          <span class="tech-badge">SVG Animation</span>
-          <span class="tech-badge">Web Audio API</span>
-        </div>
-        <div class="card-footer">
-          <span>실행하기</span>
-          <span>→</span>
+        <div class="card-body">
+          <div class="card-header-row">
+            <h2 class="card-title">뽀모도로 타이머</h2>
+            <div class="card-rating">
+              <span class="star-icon">★</span>
+              <span>5.0</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            25분 집중과 5분/15분 휴식 사이클을 지원하는 생산성 타이머입니다. 원형 SVG 프로그레스 게이지와 Web Audio API 차임벨 사운드를 제공합니다.
+          </p>
+          <div class="card-tags">
+            <span class="tag-pill">Vanilla JS</span>
+            <span class="tag-pill">SVG Animation</span>
+            <span class="tag-pill">Web Audio API</span>
+          </div>
+          <div class="card-action">
+            <span class="action-note">즉시 사용 가능</span>
+            <span class="btn-launch">열기 →</span>
+          </div>
         </div>
       </a>
 
-      <!-- 간단한 카운터 -->
+      <!-- 2. 간단한 카운터 카드 -->
       <a href="./counter/" class="project-card">
-        <div class="card-header">
-          <div class="icon-box">🔢</div>
-          <span class="card-tag">Week 02</span>
+        <div class="card-preview-area">
+          <span class="preview-badge">Week 02</span>
+          <div class="preview-icon-wrapper">🔢</div>
         </div>
-        <h2 class="card-title">간단한 카운터</h2>
-        <p class="card-desc">
-          2주차 자바스크립트 기초 실습 예제입니다. 이벤트 리스너(Click)와 DOM 렌더링을 활용한 숫자 증감 및 초기화 카운터입니다.
-        </p>
-        <div class="tech-stack">
-          <span class="tech-badge">JavaScript</span>
-          <span class="tech-badge">DOM Event</span>
-          <span class="tech-badge">CSS</span>
-        </div>
-        <div class="card-footer">
-          <span>실행하기</span>
-          <span>→</span>
+        <div class="card-body">
+          <div class="card-header-row">
+            <h2 class="card-title">간단한 카운터</h2>
+            <div class="card-rating">
+              <span class="star-icon">★</span>
+              <span>4.9</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            자바스크립트의 기본 DOM 이벤트 리스너와 상태 관리를 다루는 증감 카운터 실습 예제입니다.
+          </p>
+          <div class="card-tags">
+            <span class="tag-pill">JavaScript</span>
+            <span class="tag-pill">DOM Event</span>
+            <span class="tag-pill">State</span>
+          </div>
+          <div class="card-action">
+            <span class="action-note">기초 실습</span>
+            <span class="btn-launch">열기 →</span>
+          </div>
         </div>
       </a>
-    </main>
+    </section>
+  </main>
 
-    <footer>
-      <a href="https://nano5.notion.site/JavaScript-f94daf211d428311a5a801dd193d10ca?source=copy_link" target="_blank" rel="noopener noreferrer">Notion 강의 노트 ↗</a>
-      <span>•</span>
-      <a href="https://github.com/kmj830/WebServerProgramming" target="_blank" rel="noopener noreferrer">GitHub Repository ↗</a>
-    </footer>
-  </div>
+  <!-- 푸터 -->
+  <footer>
+    <div class="footer-inner">
+      <span>© 2026 Web Server Programming. All rights reserved.</span>
+      <div class="footer-links">
+        <a href="https://nano5.notion.site/JavaScript-f94daf211d428311a5a801dd193d10ca?source=copy_link" target="_blank" rel="noopener noreferrer">Notion</a>
+        <span>·</span>
+        <a href="https://github.com/kmj830/WebServerProgramming" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </div>
+    </div>
+  </footer>
 </body>
 </html>

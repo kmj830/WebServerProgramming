@@ -4,40 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>간단한 카운터 | Web Server Programming</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <style>
-    /* 메인으로 돌아가기 네비게이션 스타일 */
-    .nav-back {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      background: #f1f3f5;
-      color: #333;
-      text-decoration: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      transition: background 0.2s ease;
-    }
-    .nav-back:hover {
-      background: #e9ecef;
-    }
-  </style>
 </head>
 <body>
-  <a href="../" class="nav-back">← 메인 목록으로</a>
+  <a href="../" class="nav-back">← 목록으로</a>
 
-  <h1>간단한 카운터</h1>
-  <div id="count">0</div>
-  <div>
-    <button id="dec">-</button>
-    <button id="inc">+</button>
-    <button id="reset">초기화</button>
-  </div>
+  <main class="counter-card">
+    <h1>간단한 카운터</h1>
+    <p class="subtitle">자바스크립트 상태 및 DOM 조작 실습</p>
+
+    <div id="count">0</div>
+
+    <div class="button-group">
+      <button type="button" id="dec" title="감소">-</button>
+      <button type="button" id="inc" title="증가">+</button>
+      <button type="button" id="reset" title="초기화">초기화</button>
+    </div>
+  </main>
 
   <script src="script.js"></script>
 </body>
