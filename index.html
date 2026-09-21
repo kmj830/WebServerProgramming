@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>웹 서버 프로그래밍 | 실습 포털</title>
+  <title>20230176 김민중 | 웹 서버 프로그래밍</title>
+  <link rel="icon" type="image/png" href="./favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,9 +16,10 @@
       --color-body: #484848;
       --color-muted: #717171;
       --color-canvas: #ffffff;
-      --color-surface-soft: #f어7f7f7;
+      --color-surface-soft: #f7f7f7;
       --color-hairline: #dddddd;
       --color-hairline-soft: #ebebeb;
+      --radius-sm: 8px;
       --radius-md: 16px;
       --radius-full: 9999px;
       --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
@@ -67,10 +69,11 @@
       letter-spacing: -0.2px;
     }
 
-    .brand-icon {
-      width: 24px;
-      height: 24px;
-      fill: var(--color-primary);
+    .brand-icon-img {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
     }
 
     .nav-link {
@@ -217,10 +220,8 @@
   <nav class="top-nav">
     <div class="nav-inner">
       <a href="./" class="brand-logo">
-        <svg class="brand-icon" viewBox="0 0 32 32" aria-hidden="true">
-          <path d="M16 1c2.008 0 3.463.963 4.751 3.269l.533 1.025c1.954 3.83 6.116 12.515 7.1 14.836 1.457 3.447 1.35 6.776-.328 9.387-1.748 2.718-4.706 4.483-8.056 4.483-3.036 0-5.834-1.428-7.551-3.791-1.717 2.363-4.515 3.791-7.551 3.791-3.35 0-6.308-1.765-8.056-4.483-1.678-2.611-1.785-5.94-.328-9.387.984-2.321 5.146-11.006 7.1-14.836l.533-1.025C9.537 1.963 10.992 1 13 1h3zm0 2h-3c-1.392 0-2.392.678-3.414 2.502l-.533 1.025C7.147 10.276 3.063 18.8 2.148 20.97c-1.229 2.906-1.12 5.539.222 7.625 1.385 2.153 3.766 3.405 6.53 3.405 2.894 0 5.46-1.542 6.643-4.004l.457-.954.457.954c1.183 2.462 3.749 4.004 6.643 4.004 2.764 0 5.145-1.252 6.53-3.405 1.342-2.086 1.451-4.719.222-7.625-.915-2.17-4.999-10.694-6.905-14.443l-.533-1.025C21.392 3.678 20.392 3 19 3h-3zm0 13c3.314 0 6 2.686 6 6 0 2.585-1.636 4.8-4 5.623V25a2 2 0 0 0-4 0v2.623c-2.364-.823-4-3.038-4-5.623 0-3.314 2.686-6 6-6zm0 2c-2.209 0-4 1.791-4 4 0 1.637 1.01 3.045 2.454 3.655.334-.411.546-.937.546-1.655 0-1.657 1.343-3 3-3s3 1.343 3 3c0 .718.212 1.244.546 1.655C22.99 25.045 24 23.637 24 22c0-2.209-1.791-4-4-4z"/>
-        </svg>
-        <span>실습 포털</span>
+        <img src="./favicon.png" alt="아이콘" class="brand-icon-img">
+        <span>20230176 김민중</span>
       </a>
 
       <a href="https://github.com/kmj830/WebServerProgramming" target="_blank" rel="noopener noreferrer" class="nav-link">GitHub ↗</a>
