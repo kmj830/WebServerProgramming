@@ -175,7 +175,7 @@ export default function App() {
   return (
     <div className="page-wrapper" data-mode={currentMode}>
       {/* 상단 메인 포털로 돌아가기 링크 */}
-      <a href="../../" className="nav-home-btn" title="메인 포털로 돌아가기">
+      <a href="../" className="nav-home-btn" title="메인 포털로 돌아가기">
         ← 목록으로
       </a>
 
