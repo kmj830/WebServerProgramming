@@ -4,7 +4,17 @@ import { useState } from 'react'
 function App() {
   return (
       <div>
-        <a href="../" className="nav-back-btn" title="메인 포털로 돌아가기">
+        <a
+          href="../"
+          className="nav-back-btn"
+          title="메인 포털로 돌아가기"
+          onClick={(e) => {
+            if (window.location.pathname.includes('/dist')) {
+              e.preventDefault();
+              window.location.href = '../../';
+            }
+          }}
+        >
           ← 목록으로
         </a>
         <Counter/>
