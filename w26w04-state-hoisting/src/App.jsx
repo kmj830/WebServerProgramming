@@ -35,6 +35,7 @@ function App() {
                         key={index}
                         count={count}
                         onIncrement={() => onIncrement(index)}
+                        idx={index}
                     />
                 ))
             }
@@ -42,10 +43,10 @@ function App() {
     );
 }
 /*{} : 객체*/
-function Counter({count, onIncrement}) {
+function Counter({idx, count, onIncrement}) {
   return (
       <div>
-        <h1>Counter: {count}</h1>
+        <h1>Counter {idx+1} : {count}</h1>
         <button onClick={onIncrement}>
             증가
         </button>
