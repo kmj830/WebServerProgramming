@@ -26,7 +26,7 @@ function App() {
         </div>
     );
 }
-
+/*{} : 객체*/
 function Counter({count, onIncrement}) {
   return (
       <div>
