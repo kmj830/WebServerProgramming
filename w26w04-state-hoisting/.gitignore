@@ -8,7 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+# dist (GitHub Pages 정적 서빙을 위해 추적 허용)
 dist-ssr
 *.local
 
