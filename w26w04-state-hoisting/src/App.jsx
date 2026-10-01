@@ -21,6 +21,7 @@ function App() {
             >
                 ← 목록으로
             </a>
+            <h1>총합: {count1+count2}</h1>
             <Counter count={count1} onIncrement={() => setCount1(prev => prev + 1)}/>
             <Counter count={count2} onIncrement={() => setCount2(prev => prev + 1)}/>
         </div>
