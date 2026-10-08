@@ -60,9 +60,9 @@ export default function List() {
           <h1 className="text-2xl sm:text-3xl font-bold text-[#222222] tracking-tight">
             포켓몬 도감 (Pokédex)
           </h1>
-          <p className="text-sm text-[#6a6a6a] mt-1.5">
-            React Router v7과 Tailwind CSS로 구현된 반응형 카드 도감입니다. 카드를 클릭하면 상세 정보를 확인할 수 있습니다.
-          </p>
+          {/*<p className="text-sm text-[#6a6a6a] mt-1.5">*/}
+          {/*  React Router v7과 Tailwind CSS로 구현된 반응형 카드 도감입니다. 카드를 클릭하면 상세 정보를 확인할 수 있습니다.*/}
+          {/*</p>*/}
         </div>
 
         {/* 타입 필터 칩 바 */}
