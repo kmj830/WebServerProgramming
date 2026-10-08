@@ -94,6 +94,9 @@ function Counter({count, onIncrement, onRemove, onDecrement, onReset}) {
     const [bgColor, setBgColor] = useState((
         () => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
     ))
+    function changeColor() {
+        setBgColor('#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'))
+    }
 
     return (
         <div style={{backgroundColor: bgColor}}>
@@ -106,6 +109,9 @@ function Counter({count, onIncrement, onRemove, onDecrement, onReset}) {
             </button>
             <button onClick={onReset}>
                 초기화
+            </button>
+            <button onClick={changeColor}>
+                색상 변경
             </button>
             <button onClick={onRemove}>
                 제거
