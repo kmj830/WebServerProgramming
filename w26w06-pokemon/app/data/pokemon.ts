@@ -1,0 +1,145 @@
+export interface Pokemon {
+  id: number;
+  name: string;
+  enName: string;
+  types: string[];
+  image: string;
+  bgColor: string;
+  category: string;
+  height: string;
+  weight: string;
+  description: string;
+}
+
+export const typeColorMap: Record<string, { bg: string; text: string; border: string }> = {
+  풀: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
+  독: { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" },
+  불꽃: { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200" },
+  물: { bg: "bg-sky-50", text: "text-sky-700", border: "border-sky-200" },
+  전기: { bg: "bg-amber-50", text: "text-amber-800", border: "border-amber-200" },
+  노말: { bg: "bg-stone-50", text: "text-stone-700", border: "border-stone-200" },
+  에스퍼: { bg: "bg-pink-50", text: "text-pink-700", border: "border-pink-200" },
+};
+
+export const pokemons: Pokemon[] = [
+  {
+    id: 1,
+    name: "이상해씨",
+    enName: "Bulbasaur",
+    types: ["풀", "독"],
+    image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png",
+    bgColor: "#f0fdf4",
+    category: "씨앗포켓몬",
+    height: "0.7 m",
+    weight: "6.9 kg",
+    description: "태어났을 때부터 등에 식물의 씨앗이 있어 조금씩 크게 자란다.",
+  },
+  {
+    id: 4,
+    name: "파이리",
+    enName: "Charmander",
+    types: ["불꽃"],
+    image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png",
+    bgColor: "#fff1f2",
+    category: "도롱뇽포켓몬",
+    height: "0.6 m",
+    weight: "8.5 kg",
+    description: "태어날 때부터 꼬리의 끝에 불꽃이 타오르고 있다. 불꽃이 꺼지면 그 생명이 다하고 만다.",
+  },
+  {
+    id: 7,
+    name: "꼬부기",
+    enName: "Squirtle",
+    types: ["물"],
+    image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png",
+    bgColor: "#f0f9ff",
+    category: "꼬마거북포켓몬",
+    height: "0.5 m",
+    weight: "9.0 kg",
+    description: "등껍질에 숨어 몸을 보호한다. 틈을 보이면 강력한 물대포를 뿜어낸다.",
+  },
+  {
+    id: 25,
+    name: "피카츄",
+    enName: "Pikachu",
+    types: ["전기"],
+    image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
+    bgColor: "#fefce8",
+    category: "쥐포켓몬",
+    height: "0.4 m",
+    weight: "6.0 kg",
+    description: "양 뺨의 전기주머니에 전기를 저장한다. 화가 나면 번개를 발산하여 공격한다.",
+  },
+  {
+    id: 29,
+    name: "니드런♀",
+    enName: "Nidoran♀",
+    types: ["독"],
+    image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/29.png",
+    bgColor: "#faf5ff",
+    category: "독침포켓몬",
+    height: "0.4 m",
+    weight: "7.0 kg",
+    description: "작지만 독침이 있어 조심해야 한다. 암컷은 뿔이 수컷보다 작다.",
+  },
+  {
+    id: 32,
+    name: "니드런♂",
+    enName: "Nidoran♂",
+    types: ["독"],
+    image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/32.png",
+    bgColor: "#faf5ff",
+    category: "독침포켓몬",
+    height: "0.5 m",
+    weight: "9.0 kg",
+    description: "귀를 움직여 주위의 소리를 감지한다. 위험을 느끼면 강력한 독가시를 세운다.",
+  },
+  {
+    id: 133,
+    name: "이브이",
+    enName: "Eevee",
+    types: ["노말"],
+    image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png",
+    bgColor: "#fafaf9",
+    category: "진화포켓몬",
+    height: "0.3 m",
+    weight: "6.5 kg",
+    description: "불규칙한 유전자를 지녀 주위의 환경에 맞춰 다양한 형태로 진화한다.",
+  },
+  {
+    id: 150,
+    name: "뮤츠",
+    enName: "Mewtwo",
+    types: ["에스퍼"],
+    image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png",
+    bgColor: "#fdf2f8",
+    category: "유전포켓몬",
+    height: "2.0 m",
+    weight: "122.0 kg",
+    description: "뮤의 유전자를 재조합하여 만들어진 포켓몬. 극한의 사이코 파워를 지니고 있다.",
+  },
+  {
+    id: 151,
+    name: "뮤",
+    enName: "Mew",
+    types: ["에스퍼"],
+    image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png",
+    bgColor: "#fdf2f8",
+    category: "신종포켓몬",
+    height: "0.4 m",
+    weight: "4.0 kg",
+    description: "모든 포켓몬의 유전자를 지니고 있어 모든 기술을 쓸 수 있다고 전해진다.",
+  },
+  {
+    id: 152,
+    name: "치코리타",
+    enName: "Chikorita",
+    types: ["풀"],
+    image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/152.png",
+    bgColor: "#f0fdf4",
+    category: "잎사귀포켓몬",
+    height: "0.9 m",
+    weight: "6.4 kg",
+    description: "머리의 잎사귀에서 달콤한 향기를 풍겨 상대의 싸울 마음을 누그러뜨린다.",
+  },
+];

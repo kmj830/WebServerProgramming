@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Pretendard", "Airbnb Cereal VF", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  --color-rausch: #ff385c;
+  --color-rausch-hover: #e00b41;
+  --color-ink: #222222;
+  --color-body: #3f3f3f;
+  --color-muted: #6a6a6a;
+  --color-muted-soft: #929292;
+  --color-surface-soft: #f7f7f7;
+  --color-hairline: #ebebeb;
+  --color-hairline-dark: #dddddd;
+}
+
+html,
+body {
+  font-family: var(--font-sans);
+  background-color: #f7f7f7;
+  color: #222222;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
