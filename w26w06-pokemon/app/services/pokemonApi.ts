@@ -1,3 +1,5 @@
+import { KOREAN_POKEMON_TO_ID } from "./koreanPokemonMap";
+
 export interface Pokemon {
   id: number;
   name: string;
@@ -213,4 +215,47 @@ export async function fetchPokemonList(
     console.error("Error in fetchPokemonList:", err);
     return { pokemons: [], totalCount: 0, hasMore: false };
   }
+}
+
+/**
+ * PokeAPI 실시간 라이브 검색 (1,025마리 한글/영문/번호 지원)
+ */
+export async function searchPokemonLive(query: string): Promise<Pokemon[]> {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+
+  const matchedIds: number[] = [];
+
+  // 1. 숫자인 경우 (도감 번호로 직접 검색)
+  const numericId = parseInt(q, 10);
+  if (!isNaN(numericId) && numericId > 0 && numericId <= 1025) {
+    matchedIds.push(numericId);
+  }
+
+  // 2. 한국어 이름 매칭 (부분 일치 최대 12마리까지 검색)
+  const koreanEntries = Object.entries(KOREAN_POKEMON_TO_ID);
+  for (const [koName, id] of koreanEntries) {
+    if (koName.toLowerCase().includes(q)) {
+      if (!matchedIds.includes(id)) {
+        matchedIds.push(id);
+      }
+      if (matchedIds.length >= 12) break;
+    }
+  }
+
+  // 3. 매칭된 ID가 있는 경우 PokeAPI에서 상세 정보 병렬 페칭
+  if (matchedIds.length > 0) {
+    const results = await Promise.all(matchedIds.map((id) => fetchPokemonById(id)));
+    return results.filter((p): p is PokemonDetail => p !== null);
+  }
+
+  // 4. 영문 이름으로 직접 PokeAPI 호출 시도 (예: "pikachu", "rayquaza", "gengar")
+  try {
+    const directDetail = await fetchPokemonById(q);
+    if (directDetail) return [directDetail];
+  } catch {
+    // 무시
+  }
+
+  return [];
 }

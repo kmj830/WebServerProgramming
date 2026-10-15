@@ -1,16 +1,17 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Link } from "react-router";
 import type { Route } from "./+types/list";
 import {
   type Pokemon,
   fetchPokemonList,
+  searchPokemonLive,
   typeColorMap,
 } from "../services/pokemonApi";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "포켓몬 도감 | PokeAPI REST API" },
-    { name: "description", content: "PokeAPI REST API를 통해 실시간으로 데이터를 불러오는 포켓몬 도감" },
+    { title: "포켓몬 도감 | PokeAPI 무한 스크롤 & 라이브 검색" },
+    { name: "description", content: "PokeAPI REST API 무한 스크롤 및 실시간 직접 검색 포켓몬 도감" },
   ];
 }
 
@@ -28,6 +29,13 @@ export default function List() {
   const [selectedType, setSelectedType] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // 실시간 PokeAPI 검색 결과 및 상태
+  const [apiSearchResults, setApiSearchResults] = useState<Pokemon[] | null>(null);
+  const [isSearchingApi, setIsSearchingApi] = useState(false);
+
+  // 무한 스크롤 감지용 ref
+  const observerTarget = useRef<HTMLDivElement>(null);
+
   // 최초 20마리 실시간 REST API 로드
   useEffect(() => {
     let ignore = false;
@@ -42,7 +50,7 @@ export default function List() {
           setHasMore(data.hasMore);
           setOffset(PAGE_SIZE);
         }
-      } catch (err) {
+      } catch {
         if (!ignore) {
           setError("PokeAPI 서버로부터 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
         }
@@ -58,13 +66,18 @@ export default function List() {
     };
   }, []);
 
-  // 더보기 클릭 시 다음 20마리 비동기 페칭
-  const handleLoadMore = async () => {
-    if (loadingMore || !hasMore) return;
+  // 스크롤 끝 도달 시 다음 20마리 비동기 페칭 (무한 스크롤 핸들러)
+  const handleLoadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || loading || searchQuery) return;
     setLoadingMore(true);
     try {
       const data = await fetchPokemonList(offset, PAGE_SIZE);
-      setPokemons((prev) => [...prev, ...data.pokemons]);
+      setPokemons((prev) => {
+        // ID 중복 방지
+        const existingIds = new Set(prev.map((p) => p.id));
+        const newOnes = data.pokemons.filter((p) => !existingIds.has(p.id));
+        return [...prev, ...newOnes];
+      });
       setOffset((prev) => prev + PAGE_SIZE);
       setHasMore(data.hasMore);
     } catch (err) {
@@ -72,29 +85,90 @@ export default function List() {
     } finally {
       setLoadingMore(false);
     }
-  };
+  }, [loadingMore, hasMore, loading, searchQuery, offset]);
 
-  // 등록된 포켓몬들의 고유 타입 추출
+  // IntersectionObserver를 이용한 무한 스크롤 자동 트리거
+  useEffect(() => {
+    const target = observerTarget.current;
+    if (!target || !hasMore || loadingMore || loading || searchQuery) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          handleLoadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: "300px" }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [handleLoadMore, hasMore, loadingMore, loading, searchQuery]);
+
+  // 검색어 입력 시 로컬 확인 + PokeAPI 실시간 직접 조회 디바운스
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setApiSearchResults(null);
+      setIsSearchingApi(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingApi(true);
+      try {
+        const liveResults = await searchPokemonLive(q);
+        setApiSearchResults(liveResults);
+      } catch (err) {
+        console.error("Live API search error:", err);
+        setApiSearchResults([]);
+      } finally {
+        setIsSearchingApi(false);
+      }
+    }, 300); // 300ms 디바운스
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // 표시할 포켓몬 목록 (검색 시 로컬 + 실시간 API 결과 병합 및 타입 필터 적용)
+  const displayedPokemons = useMemo(() => {
+    let baseList = pokemons;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const localMatches = pokemons.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.enName.toLowerCase().includes(q) ||
+          String(p.id) === q ||
+          String(p.id).padStart(3, "0") === q
+      );
+
+      // PokeAPI 실시간 검색 결과와 로컬 매칭 병합 (ID 중복 제거)
+      const mergedMap = new Map<number, Pokemon>();
+      localMatches.forEach((p) => mergedMap.set(p.id, p));
+      if (apiSearchResults) {
+        apiSearchResults.forEach((p) => mergedMap.set(p.id, p));
+      }
+      baseList = Array.from(mergedMap.values()).sort((a, b) => a.id - b.id);
+    }
+
+    // 타입 필터 적용
+    if (selectedType !== "전체") {
+      return baseList.filter((p) => p.types.includes(selectedType));
+    }
+    return baseList;
+  }, [pokemons, searchQuery, apiSearchResults, selectedType]);
+
+  // 현재 노출된 포켓몬들의 고유 타입 추출
   const availableTypes = useMemo(() => {
     const set = new Set<string>();
     pokemons.forEach((p) => p.types.forEach((t) => set.add(t)));
+    if (apiSearchResults) {
+      apiSearchResults.forEach((p) => p.types.forEach((t) => set.add(t)));
+    }
     return ["전체", ...Array.from(set)];
-  }, [pokemons]);
-
-  // 검색어 및 타입 복합 필터링
-  const filteredPokemons = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return pokemons.filter((p) => {
-      const matchesType = selectedType === "전체" || p.types.includes(selectedType);
-      const matchesQuery =
-        !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.enName.toLowerCase().includes(q) ||
-        String(p.id) === q ||
-        String(p.id).padStart(3, "0") === q;
-      return matchesType && matchesQuery;
-    });
-  }, [pokemons, selectedType, searchQuery]);
+  }, [pokemons, apiSearchResults]);
 
   return (
     <div className="min-h-screen bg-[#f7f7f7] py-6 sm:py-10">
@@ -125,12 +199,12 @@ export default function List() {
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-[#ebebeb] text-[#6a6a6a] rounded-full text-xs font-semibold shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              REST API 실시간 연동 ({pokemons.length}마리 로드됨 / 전체 {totalCount || "1,300+"})
+              PokeAPI 실시간 연동 ({pokemons.length}마리 로드됨 / 전체 {totalCount || "1,300+"})
             </span>
           </div>
         </header>
 
-        {/* 타이틀 & 검색창 섹션 */}
+        {/* 타이틀 & 실시간 검색창 섹션 */}
         <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
@@ -141,28 +215,35 @@ export default function List() {
               포켓몬 도감 (Pokédex)
             </h1>
             <p className="text-sm text-[#6a6a6a] mt-1.5">
-              별도의 파일 저장 없이 pokeapi.co에서 실시간 REST API로 데이터를 가져옵니다. 카드를 클릭하면 상세 스탯을 확인할 수 있습니다.
+              스크롤을 내리면 자동으로 다음 포켓몬이 로드되며, 아직 안 나온 포켓몬도 검색창에 입력하면 PokeAPI에서 실시간 조회합니다.
             </p>
           </div>
 
           {/* 검색 입력창 */}
-          <div className="relative w-full md:w-80">
+          <div className="relative w-full md:w-88">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-              <svg className="w-4 h-4 text-[#929292]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              {isSearchingApi ? (
+                <svg className="animate-spin h-4 w-4 text-[#ff385c]" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 text-[#929292]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              )}
             </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="로드된 포켓몬 이름/번호 검색..."
+              placeholder="이름 또는 도감 번호 검색 (예: 뮤츠, 리자몽, 150)..."
               className="w-full pl-10 pr-9 py-2.5 bg-white border border-[#dddddd] rounded-full text-sm text-[#222222] placeholder-[#929292] focus:outline-hidden focus:border-[#222222] focus:ring-1 focus:ring-[#222222] shadow-xs transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#929292] hover:text-[#222222]"
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#929292] hover:text-[#222222] cursor-pointer"
                 title="검색어 지우기"
               >
                 ✕
@@ -200,17 +281,23 @@ export default function List() {
           </div>
         )}
 
-        {/* 결과 카운터 */}
+        {/* 결과 카운터 및 실시간 검색 상태 */}
         {!loading && (
           <div className="flex items-center justify-between mb-4 px-1">
-            <span className="text-xs font-medium text-[#6a6a6a]">
-              {searchQuery || selectedType !== "전체" ? (
+            <span className="text-xs font-medium text-[#6a6a6a] flex items-center gap-2">
+              {searchQuery ? (
                 <>
-                  검색 결과 <strong className="text-[#222222]">{filteredPokemons.length}</strong>개
+                  검색 결과 <strong className="text-[#222222]">{displayedPokemons.length}</strong>마리
+                  {isSearchingApi && (
+                    <span className="text-xs text-[#ff385c] inline-flex items-center gap-1 font-normal">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#ff385c] animate-ping" />
+                      PokeAPI 실시간 조회 중...
+                    </span>
+                  )}
                 </>
               ) : (
                 <>
-                  현재 로드됨: <strong className="text-[#222222]">{pokemons.length}</strong>마리
+                  현재 로드됨: <strong className="text-[#222222]">{pokemons.length}</strong>마리 (스크롤 시 계속 추가)
                 </>
               )}
             </span>
@@ -240,7 +327,7 @@ export default function List() {
         {/* 포켓몬 카드 그리드 */}
         {!loading && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
-            {filteredPokemons.map((pokemon) => (
+            {displayedPokemons.map((pokemon) => (
               <Link
                 key={pokemon.id}
                 to={`/detail?id=${pokemon.id}`}
@@ -306,13 +393,13 @@ export default function List() {
           </div>
         )}
 
-        {/* 검색 결과 없음 안내 */}
-        {!loading && filteredPokemons.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-2xl border border-[#ebebeb] p-8">
+        {/* 검색 결과 없음 안내 (실시간 API 조회까지 끝난 후) */}
+        {!loading && !isSearchingApi && searchQuery && displayedPokemons.length === 0 && (
+          <div className="text-center py-16 bg-white rounded-2xl border border-[#ebebeb] p-8 mt-6">
             <div className="text-4xl mb-3">🔍</div>
-            <h3 className="text-base font-bold text-[#222222] mb-1">검색 결과가 없습니다</h3>
+            <h3 className="text-base font-bold text-[#222222] mb-1">PokeAPI 조회 결과가 없습니다</h3>
             <p className="text-xs text-[#6a6a6a] mb-4">
-              현재 로드된 목록에서 일치하는 포켓몬을 찾을 수 없습니다. 아래의 "포켓몬 더보기"를 클릭하여 더 많은 포켓몬을 로드하거나 검색어를 확인해 보세요.
+              PokeAPI에 "{searchQuery}"와 일치하는 포켓몬이 존재하지 않습니다. 다른 한글 이름이나 정확한 도감 번호(1~1025)로 검색해 보세요.
             </p>
             <button
               onClick={() => {
@@ -321,36 +408,23 @@ export default function List() {
               }}
               className="px-4 py-2 bg-[#222222] hover:bg-black text-white text-xs font-semibold rounded-full transition-colors cursor-pointer"
             >
-              필터 및 검색어 초기화
+              검색어 초기화
             </button>
           </div>
         )}
 
-        {/* 더보기 (Pagination) 버튼 */}
-        {!loading && hasMore && (
-          <div className="mt-12 text-center">
-            <button
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 border border-[#dddddd] hover:border-[#222222] text-[#222222] text-sm font-semibold rounded-full shadow-xs transition-all cursor-pointer disabled:opacity-50"
-            >
-              {loadingMore ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-[#ff385c]" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  <span>PokeAPI에서 다음 포켓몬 불러오는 중...</span>
-                </>
-              ) : (
-                <>
-                  <span>포켓몬 더 불러오기 (+20)</span>
-                  <svg className="w-4 h-4 text-[#6a6a6a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </>
-              )}
-            </button>
+        {/* 무한 스크롤 관측 타겟 및 하단 로딩 스피너 */}
+        {!searchQuery && hasMore && (
+          <div ref={observerTarget} className="py-12 flex justify-center items-center">
+            {loadingMore && (
+              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-white border border-[#ebebeb] rounded-full shadow-xs text-xs font-medium text-[#6a6a6a]">
+                <svg className="animate-spin h-4 w-4 text-[#ff385c]" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                <span>스크롤 감지: 다음 포켓몬 자동 로딩 중...</span>
+              </div>
+            )}
           </div>
         )}
 
