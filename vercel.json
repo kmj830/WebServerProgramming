@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd w26w06-pokemon && pnpm install && pnpm build",
+  "outputDirectory": "w26w06-pokemon/build/client",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

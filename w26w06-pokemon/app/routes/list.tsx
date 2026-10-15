@@ -30,8 +30,11 @@ export default function List() {
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-gray-100 text-[#222222] text-sm font-medium rounded-full border border-[#ebebeb] shadow-xs transition-colors"
             title="메인 포털 페이지로 돌아가기"
             onClick={(e) => {
-              // 로컬 dev 환경과 GitHub Pages 배포 환경 모두 대응
-              if (window.location.pathname.includes('/build/client')) {
+              // Vercel, GitHub Pages, 로컬 dev 환경 모두 대응
+              if (window.location.hostname.includes('vercel.app')) {
+                e.preventDefault();
+                window.location.href = 'https://kmj830.github.io/WebServerProgramming/';
+              } else if (window.location.pathname.includes('/build/client')) {
                 e.preventDefault();
                 window.location.href = '../../../';
               }
