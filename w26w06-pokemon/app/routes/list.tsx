@@ -4,7 +4,9 @@ import type { Route } from "./+types/list";
 import {
   type Pokemon,
   fetchPokemonList,
+  fetchPokemonByType,
   searchPokemonLive,
+  ALL_POKEMON_TYPES,
   typeColorMap,
 } from "../services/pokemonApi";
 
@@ -15,7 +17,7 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 
 export default function List() {
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
@@ -26,17 +28,21 @@ export default function List() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedType, setSelectedType] = useState("전체");
+  const [selectedType, setSelectedType] = useState<string>("전체");
+  const [typePokemons, setTypePokemons] = useState<Pokemon[] | null>(null);
+  const [loadingType, setLoadingType] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
 
   // 실시간 PokeAPI 검색 결과 및 상태
   const [apiSearchResults, setApiSearchResults] = useState<Pokemon[] | null>(null);
   const [isSearchingApi, setIsSearchingApi] = useState(false);
 
-  // 무한 스크롤 감지용 ref
+  // 무한 스크롤 감지용 ref (하단 백업 센티넬 및 절반 지점 프리페치 센티넬)
   const observerTarget = useRef<HTMLDivElement>(null);
+  const prefetchSentinelRef = useRef<HTMLAnchorElement | null>(null);
 
-  // 최초 20마리 실시간 REST API 로드
+  // 최초 50마리 실시간 REST API 로드
   useEffect(() => {
     let ignore = false;
     async function loadInitial() {
@@ -66,9 +72,39 @@ export default function List() {
     };
   }, []);
 
-  // 스크롤 끝 도달 시 다음 20마리 비동기 페칭 (무한 스크롤 핸들러)
+  // 특정 타입 선택 시 PokeAPI /type/{name}에서 즉시 해당 속성 포켓몬 로드
+  useEffect(() => {
+    if (selectedType === "전체") {
+      setTypePokemons(null);
+      setLoadingType(false);
+      return;
+    }
+
+    let ignore = false;
+    setLoadingType(true);
+    fetchPokemonByType(selectedType, 50)
+      .then((data) => {
+        if (!ignore) {
+          setTypePokemons(data);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load pokemons for type:", err);
+      })
+      .finally(() => {
+        if (!ignore) {
+          setLoadingType(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [selectedType]);
+
+  // 스크롤 시 다음 50마리 비동기 페칭 (무한 스크롤 핸들러)
   const handleLoadMore = useCallback(async () => {
-    if (loadingMore || !hasMore || loading || searchQuery) return;
+    if (loadingMore || !hasMore || loading || searchQuery || selectedType !== "전체") return;
     setLoadingMore(true);
     try {
       const data = await fetchPokemonList(offset, PAGE_SIZE);
@@ -85,12 +121,12 @@ export default function List() {
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore, loading, searchQuery, offset]);
+  }, [loadingMore, hasMore, loading, searchQuery, selectedType, offset]);
 
-  // IntersectionObserver를 이용한 무한 스크롤 자동 트리거
+  // 1. 절반 지점 도달 시 다음 50마리 백그라운드 프리페치 (중간 스크롤 통과 시 무음 로딩)
   useEffect(() => {
-    const target = observerTarget.current;
-    if (!target || !hasMore || loadingMore || loading || searchQuery) return;
+    const target = prefetchSentinelRef.current;
+    if (!target || !hasMore || loadingMore || loading || searchQuery || selectedType !== "전체") return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -98,12 +134,30 @@ export default function List() {
           handleLoadMore();
         }
       },
-      { threshold: 0.1, rootMargin: "300px" }
+      { threshold: 0.1, rootMargin: "200px" }
     );
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [handleLoadMore, hasMore, loadingMore, loading, searchQuery]);
+  }, [handleLoadMore, hasMore, loadingMore, loading, searchQuery, selectedType, pokemons.length]);
+
+  // 2. 최하단 도달 시 백업 무한 스크롤 트리거
+  useEffect(() => {
+    const target = observerTarget.current;
+    if (!target || !hasMore || loadingMore || loading || searchQuery || selectedType !== "전체") return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          handleLoadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: "400px" }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [handleLoadMore, hasMore, loadingMore, loading, searchQuery, selectedType]);
 
   // 검색어 입력 시 로컬 확인 + PokeAPI 실시간 직접 조회 디바운스
   useEffect(() => {
@@ -117,7 +171,7 @@ export default function List() {
     const timer = setTimeout(async () => {
       setIsSearchingApi(true);
       try {
-        const liveResults = await searchPokemonLive(q);
+        const liveResults = await searchPokemonLive(q, 50);
         setApiSearchResults(liveResults);
       } catch (err) {
         console.error("Live API search error:", err);
@@ -130,45 +184,36 @@ export default function List() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // 표시할 포켓몬 목록 (검색 시 로컬 + 실시간 API 결과 병합 및 타입 필터 적용)
+  // 표시할 포켓몬 목록 (검색 시 로컬 + 실시간 API 결과 병합 및 부분 일치 지원)
   const displayedPokemons = useMemo(() => {
-    let baseList = pokemons;
+    let baseList = selectedType === "전체" ? pokemons : (typePokemons || []);
 
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
-      const localMatches = pokemons.filter(
+      const pool = selectedType === "전체" ? pokemons : (typePokemons || []);
+      const localMatches = pool.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
           p.enName.toLowerCase().includes(q) ||
-          String(p.id) === q ||
-          String(p.id).padStart(3, "0") === q
+          String(p.id).includes(q) ||
+          String(p.id).padStart(3, "0").includes(q)
       );
 
       // PokeAPI 실시간 검색 결과와 로컬 매칭 병합 (ID 중복 제거)
       const mergedMap = new Map<number, Pokemon>();
       localMatches.forEach((p) => mergedMap.set(p.id, p));
       if (apiSearchResults) {
-        apiSearchResults.forEach((p) => mergedMap.set(p.id, p));
+        apiSearchResults.forEach((p) => {
+          if (selectedType === "전체" || p.types.includes(selectedType)) {
+            mergedMap.set(p.id, p);
+          }
+        });
       }
       baseList = Array.from(mergedMap.values()).sort((a, b) => a.id - b.id);
     }
 
-    // 타입 필터 적용
-    if (selectedType !== "전체") {
-      return baseList.filter((p) => p.types.includes(selectedType));
-    }
     return baseList;
-  }, [pokemons, searchQuery, apiSearchResults, selectedType]);
-
-  // 현재 노출된 포켓몬들의 고유 타입 추출
-  const availableTypes = useMemo(() => {
-    const set = new Set<string>();
-    pokemons.forEach((p) => p.types.forEach((t) => set.add(t)));
-    if (apiSearchResults) {
-      apiSearchResults.forEach((p) => p.types.forEach((t) => set.add(t)));
-    }
-    return ["전체", ...Array.from(set)];
-  }, [pokemons, apiSearchResults]);
+  }, [pokemons, typePokemons, searchQuery, apiSearchResults, selectedType]);
 
   return (
     <div className="min-h-screen bg-[#f7f7f7] py-6 sm:py-10">
@@ -199,7 +244,7 @@ export default function List() {
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-[#ebebeb] text-[#6a6a6a] rounded-full text-xs font-semibold shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              PokeAPI 실시간 연동 ({pokemons.length}마리 로드됨 / 전체 {totalCount || "1,300+"})
+              PokeAPI 실시간 연동 ({pokemons.length}마리 로드됨 / 전체 {totalCount || "1,025+"})
             </span>
           </div>
         </header>
@@ -215,7 +260,7 @@ export default function List() {
               포켓몬 도감 (Pokédex)
             </h1>
             <p className="text-sm text-[#6a6a6a] mt-1.5">
-              스크롤을 내리면 자동으로 다음 포켓몬이 로드되며, 아직 안 나온 포켓몬도 검색창에 입력하면 PokeAPI에서 실시간 조회합니다.
+              스크롤을 내리면 절반 지점에서 자동으로 다음 50마리를 미리 불러오며, 아직 로드되지 않은 포켓몬도 도감 번호나 이름으로 실시간 검색할 수 있습니다.
             </p>
           </div>
 
@@ -237,7 +282,7 @@ export default function List() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="이름 또는 도감 번호 검색 (예: 뮤츠, 리자몽, 150)..."
+              placeholder="이름 또는 도감 번호 검색 (예: 10, 뮤츠, 피카츄)..."
               className="w-full pl-10 pr-9 py-2.5 bg-white border border-[#dddddd] rounded-full text-sm text-[#222222] placeholder-[#929292] focus:outline-hidden focus:border-[#222222] focus:ring-1 focus:ring-[#222222] shadow-xs transition-all"
             />
             {searchQuery && (
@@ -252,27 +297,25 @@ export default function List() {
           </div>
         </div>
 
-        {/* 타입 필터 칩 바 */}
-        {availableTypes.length > 1 && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar">
-            {availableTypes.map((type) => {
-              const isActive = selectedType === type;
-              return (
-                <button
-                  key={type}
-                  onClick={() => setSelectedType(type)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                    isActive
-                      ? "bg-[#222222] text-white shadow-xs"
-                      : "bg-white text-[#6a6a6a] border border-[#ebebeb] hover:border-[#c1c1c1] hover:text-[#222222]"
-                  }`}
-                >
-                  {type}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* 18개 전체 타입 필터 칩 바 (고정 표시) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar">
+          {ALL_POKEMON_TYPES.map((type) => {
+            const isActive = selectedType === type;
+            return (
+              <button
+                key={type}
+                onClick={() => setSelectedType(type)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                  isActive
+                    ? "bg-[#222222] text-white shadow-xs"
+                    : "bg-white text-[#6a6a6a] border border-[#ebebeb] hover:border-[#c1c1c1] hover:text-[#222222]"
+                }`}
+              >
+                {type}
+              </button>
+            );
+          })}
+        </div>
 
         {/* 에러 상태 안내 */}
         {error && (
@@ -295,9 +338,19 @@ export default function List() {
                     </span>
                   )}
                 </>
+              ) : selectedType !== "전체" ? (
+                <>
+                  {selectedType} 속성 <strong className="text-[#222222]">{displayedPokemons.length}</strong>마리
+                  {loadingType && (
+                    <span className="text-xs text-[#ff385c] inline-flex items-center gap-1 font-normal">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#ff385c] animate-ping" />
+                      속성 포켓몬 로딩 중...
+                    </span>
+                  )}
+                </>
               ) : (
                 <>
-                  현재 로드됨: <strong className="text-[#222222]">{pokemons.length}</strong>마리 (스크롤 시 계속 추가)
+                  현재 로드됨: <strong className="text-[#222222]">{pokemons.length}</strong>마리 (절반 스크롤 시 자동 프리페치)
                 </>
               )}
             </span>
@@ -305,9 +358,9 @@ export default function List() {
         )}
 
         {/* 최초 로딩 스켈레톤 그리드 */}
-        {loading && (
+        {(loading || loadingType) && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
-            {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+            {Array.from({ length: 30 }).map((_, i) => (
               <div
                 key={i}
                 className="bg-white rounded-2xl border border-[#ebebeb] p-3.5 flex flex-col justify-between animate-pulse"
@@ -325,76 +378,85 @@ export default function List() {
         )}
 
         {/* 포켓몬 카드 그리드 */}
-        {!loading && (
+        {!loading && !loadingType && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
-            {displayedPokemons.map((pokemon) => (
-              <Link
-                key={pokemon.id}
-                to={`/detail?id=${pokemon.id}`}
-                className="group bg-white rounded-2xl border border-[#ebebeb] p-3.5 flex flex-col justify-between hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer"
-              >
-                {/* 이미지 썸네일 박스 */}
-                <div
-                  className="w-full aspect-square rounded-xl flex items-center justify-center p-3 mb-3 relative overflow-hidden"
-                  style={{ backgroundColor: pokemon.bgColor }}
+            {displayedPokemons.map((pokemon, idx) => {
+              // 50개 배치 중 절반(25번째 전) 통과 시 백그라운드 프리페치 트리거
+              const isHalfwaySentinel =
+                selectedType === "전체" &&
+                !searchQuery &&
+                idx === Math.max(0, pokemons.length - 25);
+
+              return (
+                <Link
+                  key={pokemon.id}
+                  ref={isHalfwaySentinel ? prefetchSentinelRef : undefined}
+                  to={`/detail?id=${pokemon.id}`}
+                  className="group bg-white rounded-2xl border border-[#ebebeb] p-3.5 flex flex-col justify-between hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer"
                 >
-                  <span className="absolute top-2 left-2 text-[10px] font-mono font-bold text-[#929292]">
-                    #{String(pokemon.id).padStart(3, "0")}
-                  </span>
-                  <img
-                    src={pokemon.image}
-                    alt={pokemon.name}
-                    loading="lazy"
-                    className="w-full h-full object-contain group-hover:scale-108 transition-transform duration-300 drop-shadow-xs"
-                  />
-                </div>
-
-                {/* 텍스트 메타 정보 */}
-                <div>
-                  <div className="flex items-baseline justify-between mb-0.5">
-                    <h2
-                      className="text-base font-semibold text-[#222222] group-hover:text-[#ff385c] transition-colors truncate"
-                      title={pokemon.name}
-                    >
-                      {pokemon.name}
-                    </h2>
-                    <span
-                      className="text-[11px] text-[#929292] font-normal truncate max-w-[50%]"
-                      title={pokemon.category}
-                    >
-                      {pokemon.category}
+                  {/* 이미지 썸네일 박스 */}
+                  <div
+                    className="w-full aspect-square rounded-xl flex items-center justify-center p-3 mb-3 relative overflow-hidden"
+                    style={{ backgroundColor: pokemon.bgColor }}
+                  >
+                    <span className="absolute top-2 left-2 text-[10px] font-mono font-bold text-[#929292]">
+                      #{String(pokemon.id).padStart(3, "0")}
                     </span>
+                    <img
+                      src={pokemon.image}
+                      alt={pokemon.name}
+                      loading="lazy"
+                      className="w-full h-full object-contain group-hover:scale-108 transition-transform duration-300 drop-shadow-xs"
+                    />
                   </div>
-                  <p className="text-xs text-[#929292] mb-3 truncate" title={pokemon.enName}>
-                    {pokemon.enName}
-                  </p>
 
-                  {/* 타입 뱃지 */}
-                  <div className="flex flex-wrap gap-1">
-                    {pokemon.types.map((type) => {
-                      const style = typeColorMap[type] || {
-                        bg: "bg-gray-100",
-                        text: "text-gray-700",
-                        border: "border-gray-200",
-                      };
-                      return (
-                        <span
-                          key={type}
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${style.bg} ${style.text} ${style.border}`}
-                        >
-                          {type}
-                        </span>
-                      );
-                    })}
+                  {/* 텍스트 메타 정보 */}
+                  <div>
+                    <div className="flex items-baseline justify-between mb-0.5">
+                      <h2
+                        className="text-base font-semibold text-[#222222] group-hover:text-[#ff385c] transition-colors truncate"
+                        title={pokemon.name}
+                      >
+                        {pokemon.name}
+                      </h2>
+                      <span
+                        className="text-[11px] text-[#929292] font-normal truncate max-w-[50%]"
+                        title={pokemon.category}
+                      >
+                        {pokemon.category}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#929292] mb-3 truncate" title={pokemon.enName}>
+                      {pokemon.enName}
+                    </p>
+
+                    {/* 타입 뱃지 */}
+                    <div className="flex flex-wrap gap-1">
+                      {pokemon.types.map((type) => {
+                        const style = typeColorMap[type] || {
+                          bg: "bg-gray-100",
+                          text: "text-gray-700",
+                          border: "border-gray-200",
+                        };
+                        return (
+                          <span
+                            key={type}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${style.bg} ${style.text} ${style.border}`}
+                          >
+                            {type}
+                          </span>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
 
         {/* 검색 결과 없음 안내 (실시간 API 조회까지 끝난 후) */}
-        {!loading && !isSearchingApi && searchQuery && displayedPokemons.length === 0 && (
+        {!loading && !loadingType && !isSearchingApi && searchQuery && displayedPokemons.length === 0 && (
           <div className="text-center py-16 bg-white rounded-2xl border border-[#ebebeb] p-8 mt-6">
             <div className="text-4xl mb-3">🔍</div>
             <h3 className="text-base font-bold text-[#222222] mb-1">PokeAPI 조회 결과가 없습니다</h3>
@@ -413,8 +475,8 @@ export default function List() {
           </div>
         )}
 
-        {/* 무한 스크롤 관측 타겟 및 하단 로딩 스피너 */}
-        {!searchQuery && hasMore && (
+        {/* 무한 스크롤 백업 관측 타겟 및 하단 로딩 스피너 */}
+        {!searchQuery && selectedType === "전체" && hasMore && (
           <div ref={observerTarget} className="py-12 flex justify-center items-center">
             {loadingMore && (
               <div className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-white border border-[#ebebeb] rounded-full shadow-xs text-xs font-medium text-[#6a6a6a]">
@@ -422,7 +484,7 @@ export default function List() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
-                <span>스크롤 감지: 다음 포켓몬 자동 로딩 중...</span>
+                <span>다음 50마리 자동 로딩 중...</span>
               </div>
             )}
           </div>

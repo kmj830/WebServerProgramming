@@ -45,6 +45,49 @@ export const typeColorMap: Record<string, { bg: string; text: string; border: st
   페어리: { bg: "bg-fuchsia-50", text: "text-fuchsia-700", border: "border-fuchsia-200" },
 };
 
+export const ALL_POKEMON_TYPES = [
+  "전체",
+  "노말",
+  "불꽃",
+  "물",
+  "풀",
+  "전기",
+  "얼음",
+  "격투",
+  "독",
+  "땅",
+  "비행",
+  "에스퍼",
+  "벌레",
+  "바위",
+  "고스트",
+  "드래곤",
+  "강철",
+  "악",
+  "페어리",
+] as const;
+
+export const TYPE_EN_MAP: Record<string, string> = {
+  노말: "normal",
+  불꽃: "fire",
+  물: "water",
+  전기: "electric",
+  풀: "grass",
+  얼음: "ice",
+  격투: "fighting",
+  독: "poison",
+  땅: "ground",
+  비행: "flying",
+  에스퍼: "psychic",
+  벌레: "bug",
+  바위: "rock",
+  고스트: "ghost",
+  드래곤: "dragon",
+  강철: "steel",
+  악: "dark",
+  페어리: "fairy",
+};
+
 const TYPE_KO_MAP: Record<string, string> = {
   normal: "노말",
   fire: "불꽃",
@@ -218,35 +261,112 @@ export async function fetchPokemonList(
 }
 
 /**
- * PokeAPI 실시간 라이브 검색 (1,025마리 한글/영문/번호 지원)
+ * 특정 타입에 해당하는 포켓몬 목록 페칭 (PokeAPI /type/{name} 캐싱)
  */
-export async function searchPokemonLive(query: string): Promise<Pokemon[]> {
+const typePokemonsCache = new Map<string, Pokemon[]>();
+
+export async function fetchPokemonByType(typeName: string, limit = 50): Promise<Pokemon[]> {
+  if (!typeName || typeName === "전체") return [];
+  const enType = TYPE_EN_MAP[typeName];
+  if (!enType) return [];
+
+  if (typePokemonsCache.has(enType)) {
+    return typePokemonsCache.get(enType)!;
+  }
+
+  try {
+    const res = await fetch(`https://pokeapi.co/api/v2/type/${enType}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+
+    // 1~1025 범위 내의 포켓몬 ID 추출
+    const matchedIds: number[] = [];
+    for (const item of data.pokemon) {
+      const match = item.pokemon.url.match(/\/pokemon\/(\d+)\//);
+      if (match) {
+        const id = parseInt(match[1], 10);
+        if (id <= 1025) {
+          matchedIds.push(id);
+        }
+      }
+      if (matchedIds.length >= limit) break;
+    }
+
+    // 10개씩 청크 단위로 병렬 페칭하여 안정성 확보
+    const results: Pokemon[] = [];
+    const chunkSize = 10;
+    for (let i = 0; i < matchedIds.length; i += chunkSize) {
+      const chunk = matchedIds.slice(i, i + chunkSize);
+      const batch = await Promise.all(chunk.map((id) => fetchPokemonById(id)));
+      for (const p of batch) {
+        if (p) results.push(p);
+      }
+    }
+
+    typePokemonsCache.set(enType, results);
+    return results;
+  } catch (err) {
+    console.error(`Failed to fetch pokemons for type ${typeName}:`, err);
+    return [];
+  }
+}
+
+/**
+ * PokeAPI 실시간 라이브 검색 (1,025마리 한글/영문/번호 부분 일치 지원)
+ */
+export async function searchPokemonLive(query: string, maxResults = 50): Promise<Pokemon[]> {
   const q = query.trim().toLowerCase();
   if (!q) return [];
 
   const matchedIds: number[] = [];
 
-  // 1. 숫자인 경우 (도감 번호로 직접 검색)
-  const numericId = parseInt(q, 10);
-  if (!isNaN(numericId) && numericId > 0 && numericId <= 1025) {
-    matchedIds.push(numericId);
+  // 1. 숫자가 포함된 경우 (도감 번호 부분 일치)
+  // 예: "10" 입력 시 -> 10(완전), 100~109, 1000~1025(접두사), 110, 210, 310...(포함)
+  if (/^\d+$/.test(q)) {
+    const exact: number[] = [];
+    const prefix: number[] = [];
+    const contains: number[] = [];
+
+    for (let id = 1; id <= 1025; id++) {
+      const idStr = String(id);
+      const paddedStr = idStr.padStart(3, "0");
+      if (idStr === q || paddedStr === q) {
+        exact.push(id);
+      } else if (idStr.startsWith(q) || paddedStr.startsWith(q)) {
+        prefix.push(id);
+      } else if (idStr.includes(q)) {
+        contains.push(id);
+      }
+    }
+
+    matchedIds.push(...exact, ...prefix, ...contains);
   }
 
-  // 2. 한국어 이름 매칭 (부분 일치 최대 12마리까지 검색)
+  // 2. 한국어 이름 매칭
   const koreanEntries = Object.entries(KOREAN_POKEMON_TO_ID);
   for (const [koName, id] of koreanEntries) {
     if (koName.toLowerCase().includes(q)) {
       if (!matchedIds.includes(id)) {
         matchedIds.push(id);
       }
-      if (matchedIds.length >= 12) break;
     }
   }
 
-  // 3. 매칭된 ID가 있는 경우 PokeAPI에서 상세 정보 병렬 페칭
-  if (matchedIds.length > 0) {
-    const results = await Promise.all(matchedIds.map((id) => fetchPokemonById(id)));
-    return results.filter((p): p is PokemonDetail => p !== null);
+  // 상위 최대 maxResults 개로 제한
+  const targetIds = matchedIds.slice(0, maxResults);
+
+  // 3. 매칭된 ID가 있는 경우 10개씩 배치 페칭
+  if (targetIds.length > 0) {
+    const results: Pokemon[] = [];
+    const chunkSize = 10;
+    for (let i = 0; i < targetIds.length; i += chunkSize) {
+      const chunk = targetIds.slice(i, i + chunkSize);
+      const batch = await Promise.all(chunk.map((id) => fetchPokemonById(id)));
+      for (const p of batch) {
+        if (p) results.push(p);
+      }
+    }
+    return results;
   }
 
   // 4. 영문 이름으로 직접 PokeAPI 호출 시도 (예: "pikachu", "rayquaza", "gengar")
