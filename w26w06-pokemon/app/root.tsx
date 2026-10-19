@@ -33,6 +33,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta property="og:title" content={"포켓몬도감 (react)"} />
+        <meta property="og:description" content="포켓몬 타입, 능력치, 특징 등 다양한 정보를 한 눈에 볼 수 있는 도감" />
+        <meta property="og:url" content="https://web-server-programming.vercel.app" />
+        <meta property="og:image" content="https://github.com/kmj830/WebServerProgramming/tree/main/w26w06-pokemon/public/img.png" />
+        <meta property="og:type" content="website" />
+        <meta property="og:locale" content="ko_KR" />
+
         <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" />
         <Meta />
         <Links />
