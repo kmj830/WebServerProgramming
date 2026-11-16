@@ -9,7 +9,7 @@ Airbnb 디자인 시스템([DESIGN.md](../DESIGN.md))을 준수하여 따뜻하�
 
 ### 1. 개발 서버 실행
 ```bash
-cd pomodoro-timer2
+cd w26w03-pomodoro-react
 npm run dev
 ```
 브라우저에서 `http://localhost:5173`으로 접속하여 확인합니다.
@@ -25,7 +25,7 @@ npm run build
 ## 📁 프로젝트 구조
 
 ```text
-pomodoro-timer2/
+w26w03-pomodoro-react/
 ├── index.html          # HTML 진입점 및 폰트 설정
 ├── package.json        # 의존성 및 스크립트 설정
 ├── vite.config.js      # Vite 설정 (상대 경로 base: './')
