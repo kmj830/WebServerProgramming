@@ -7,16 +7,22 @@ Thumbs.db
 *.iml
 .vscode/
 
-# Dependencies & Build Output
+# Dependencies, Env & Build Output
 node_modules/
 /dist/
 .vite/
+.venv/
+.env
+.env.local
+.env.*.local
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
 # AI Coding Assistants, Skills & Configs
 .agents/
+.playwright-mcp/
+skills/
 skills-lock.json
 .gemini/
 .claude/
@@ -45,5 +51,7 @@ DESIGN.md
 SKILL.md
 
 # Standalone Sub-Projects
+w26w03-react-counter/
 w26w10-spring/
-
+w26w10-controller/
+w26w11-thymeleaf/

@@ -2,6 +2,9 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/w26w08-song-list" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/w26w03-react-counter" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/w26w10-spring" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/w26w10-controller" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/w26w11-thymeleaf" vcs="Git" />
   </component>
 </project>
